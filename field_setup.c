@@ -6,73 +6,66 @@
 #include <stdint.h>
 
 #include "field_setup.h"
+#include "defines.h"
 
-void set_neighbour_policy(uint16_t arr[], int x, int y){
-    for(unsigned int i=0; i<(x*y); i++){
-        if((i+1) % x != 0){
-            arr[i] = arr[i]|0b0000000100000000;
-        };
-        if((i) % x != 0){
-            arr[i] = arr[i]|0b0000001000000000;
-        };
-        if(i > (x-1)){
-            arr[i] = arr[i]|0b0000100000000000;
-        };
-        if(i < (x*(y-1))){
-            arr[i] = arr[i]|0b0000010000000000;
-        };
+void set_neighbour_policy(uint16_t arr[]){
+    for(uint8_t i = 0; i < (SIZE_X * SIZE_Y); i++){
+        if(i % SIZE_X != 8)
+            arr[i] |= RIGHT;
+
+        if(i % SIZE_X != 0)
+            arr[i] |= LEFT;
+
+        if(i > SIZE_X - 1)
+            arr[i] |= UP;
+
+        if(i < SIZE_X * (SIZE_Y - 1))
+            arr[i] |= DOWN;
+
     };
 }
 
-void increment_around_bombs(uint16_t arr[], int x, int y, int bomb_cord){
+void increment_around_bombs(uint16_t arr[], int bomb_cord){
 
-    if((arr[bomb_cord]&0b0000100000000000) && ((arr[bomb_cord-x]&0b1111) != 0b1001)){
-        arr[bomb_cord-x]++;
-    };
+    if(arr[bomb_cord] & UP && FIELD_VALUE(arr[bomb_cord - SIZE_X]) != BOMB_VALUE)
+        arr[bomb_cord - SIZE_X]++;
 
-    if((arr[bomb_cord]&0b0000010000000000) && ((arr[bomb_cord+x]&0b1111) != 0b1001)){
-        arr[bomb_cord+x]++;
-    };
+    if(arr[bomb_cord] & DOWN && FIELD_VALUE(arr[bomb_cord + SIZE_X]) != BOMB_VALUE)
+        arr[bomb_cord + SIZE_X]++;
 
-    if((arr[bomb_cord]&0b0000001000000000) && ((arr[bomb_cord-1]&0b1111) != 0b1001)){
-        arr[bomb_cord-1]++;
-    };
+    if(arr[bomb_cord] & LEFT && FIELD_VALUE(arr[bomb_cord - 1]) != BOMB_VALUE)
+        arr[bomb_cord - 1]++;
 
-    if((arr[bomb_cord]&0b0000000100000000) && ((arr[bomb_cord+1]&0b1111) != 0b1001)){
-        arr[bomb_cord+1]++;
-    };
+    if(arr[bomb_cord] & RIGHT && FIELD_VALUE(arr[bomb_cord + 1]) != BOMB_VALUE)
+        arr[bomb_cord + 1]++;
 
 
 
-    if(((arr[bomb_cord]&0b0000101000000000) == 0b0000101000000000) && ((arr[bomb_cord-x-1]&0b1111) != 0b1001)){
-        arr[bomb_cord-x-1]++;
-    };
+    if((arr[bomb_cord] & LEFT_UP) == LEFT_UP && FIELD_VALUE(arr[bomb_cord - SIZE_X - 1]) != BOMB_VALUE)
+        arr[bomb_cord - SIZE_X - 1]++;
 
-    if(((arr[bomb_cord]&0b0000100100000000) == 0b0000100100000000) && ((arr[bomb_cord-x+1]&0b1111) != 0b1001)){
-        arr[bomb_cord-x+1]++;
-    };
+    if((arr[bomb_cord] & RIGHT_UP) == RIGHT_UP && FIELD_VALUE(arr[bomb_cord - SIZE_X + 1]) != BOMB_VALUE)
+        arr[bomb_cord - SIZE_X + 1]++;
 
-    if(((arr[bomb_cord]&0b0000011000000000) == 0b0000011000000000) && ((arr[bomb_cord+x-1]&0b1111) != 0b1001)){
-        arr[bomb_cord+x-1]++;
-    };
+    if((arr[bomb_cord] & LEFT_DOWN) == LEFT_DOWN && FIELD_VALUE(arr[bomb_cord + SIZE_X - 1]) != BOMB_VALUE)
+        arr[bomb_cord + SIZE_X - 1]++;
 
-    if(((arr[bomb_cord]&0b0000010100000000) == 0b0000010100000000) && ((arr[bomb_cord+x+1]&0b1111) != 0b1001)){
-        arr[bomb_cord+x+1]++;
-    };
+    if((arr[bomb_cord] & RIGHT_DOWN) == RIGHT_DOWN && FIELD_VALUE(arr[bomb_cord + SIZE_X + 1]) != BOMB_VALUE)
+        arr[bomb_cord + SIZE_X + 1]++;
 
 }
 
-void generate_bombs(uint16_t arr[], int bombs, int x, int y, int first_cord){
+void generate_bombs(uint16_t arr[], int first_cord){
 
     unsigned int bomb_candidate;
 
     srand(time(0));
 
-    for(unsigned int i=0; i<bombs; i=i){
-        bomb_candidate = rand()%(x*y-1);
-        if(((arr[bomb_candidate]&0b1111) != 0b1001) && bomb_candidate!=first_cord){
-            arr[bomb_candidate] = (arr[bomb_candidate]&0b1111111111110000)|0b1001;
-            increment_around_bombs(arr, x, y, bomb_candidate);
+    for(uint8_t i = 0; i < BOMBS; ){
+        bomb_candidate = rand() % (SIZE_X * SIZE_Y - 1);
+        if((FIELD_VALUE(arr[bomb_candidate]) != BOMB_VALUE) && bomb_candidate != first_cord){
+            FIELD_VALUE(arr[bomb_candidate]) = BOMB_VALUE;
+            increment_around_bombs(arr, bomb_candidate);
             i++;
         }
     }

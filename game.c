@@ -7,14 +7,15 @@
 #include <malloc.h>
 
 #include "field_setup.h"
+#include "defines.h"
 
-void print_arr(uint16_t arr[], int x, int y){
+void print_arr(uint16_t arr[]){
     printf("\n");
-    for(unsigned short int i = 0; i<(x*y); i++){
-        if(arr[i]&0b1000000000000000){
-            printf("%d ", arr[i]&0b0000000000001111);
+    for(unsigned short int i = 0; i < (SIZE_X * SIZE_Y); i++){
+        if(arr[i] & UNCOVERED){
+            printf("%d ", FIELD_VALUE(arr[i]));
         }else{
-            if(arr[i]&0b0100000000000000){
+            if(arr[i] & FLAG){
                 printf("F ");
             }else{
                 printf("C ");
@@ -22,105 +23,103 @@ void print_arr(uint16_t arr[], int x, int y){
         };
 
 
-        if((i+1) % x == 0){
+        if((i+1) % SIZE_X == 0){
             printf("\n");
         };
     };
     printf("\n\n");
 }
 
-void uncover(uint16_t arr[], int x, int y, int cord){
+void uncover(uint16_t arr[], int coord){
 
-    if((arr[cord]&0b1100000000000000) == 0){
-        arr[cord] = arr[cord]|0b1000000000000000;
+    if((arr[coord] & (FLAG + UNCOVERED)) == 0){
+        arr[coord] |= UNCOVERED;
 
-        if((arr[cord]&0b1111) == 0){
+        if(FIELD_VALUE(arr[coord]) == 0){
 
-            if(arr[cord]&0b0000100000000000){
-                uncover(arr, x, y, cord-x);
+            if(arr[coord] & UP){
+                uncover(arr, coord - SIZE_X);
             };
 
-            if(arr[cord]&0b0000010000000000){
-                uncover(arr, x, y, cord+x);
+            if(arr[coord] & DOWN){
+                uncover(arr, coord + SIZE_X);
             };
 
-            if(arr[cord]&0b0000001000000000){
-                uncover(arr, x, y, cord-1);
+            if(arr[coord] & LEFT){
+                uncover(arr, coord - 1);
             };
 
-            if(arr[cord]&0b0000000100000000){
-                uncover(arr, x, y, cord+1);
+            if(arr[coord] & RIGHT){
+                uncover(arr, coord + 1);
             };
 
 
-            if( (arr[cord]&0b0000101000000000) == 0b0000101000000000){
-                uncover(arr, x, y, cord-1-x);
+            if((arr[coord] & LEFT_UP) == LEFT_UP){
+                uncover(arr, coord - 1 - SIZE_X);
             };
 
-            if( (arr[cord]&0b0000100100000000) == 0b0000100100000000){
-                uncover(arr, x, y, cord+1-x);
+            if( (arr[coord] & RIGHT_UP) == RIGHT_UP){
+                uncover(arr, coord + 1 - SIZE_X);
             };
 
-            if( (arr[cord]&0b0000011000000000) == 0b0000011000000000){
-                uncover(arr, x, y, cord-1+x);
+            if( (arr[coord] & LEFT_DOWN) == LEFT_DOWN){
+                uncover(arr, coord - 1 + SIZE_X);
             };
 
-            if( (arr[cord]&0b0000010100000000) == 0b0000010100000000){
-                uncover(arr, x, y, cord+1+x);
+            if( (arr[coord] & RIGHT_DOWN) == RIGHT_DOWN){
+                uncover(arr, coord + 1 + SIZE_X);
             };
         };
     };
 }
 
-void set_flag(uint16_t arr[], int cord, int *flags_total){
-    if((arr[cord]&0b1100000000000000) == 0){
-        arr[cord] = (arr[cord]&0b0011111111111111)|0b0100000000000000;
-        *flags_total++;
-    }else{
-        if((arr[cord]&0b1100000000000000) == 0b0100000000000000){
-            arr[cord] = (arr[cord])&0b0011111111111111;
-            *flags_total--;
-        }
-    }
+void set_flag(uint16_t arr[], int coord, uint8_t *flags_total_ptr){
+    if((arr[coord] ^= FLAG) & FLAG)
+        *flags_total_ptr++;
+    else
+        *flags_total_ptr--;
 }
 
-void first_move(uint16_t arr[], int x, int y, int bombs){
+void first_move(uint16_t arr[]){
 
-    print_arr(arr, x, y);
+    print_arr(arr);
 
-    int first_cord;
-    printf("First cord: ");
-    scanf("%d", &first_cord);
+    int first_coord;
+    printf("First coord: ");
+    scanf("%d", &first_coord);
     printf("\n");
 
-    set_neighbour_policy(arr, x, y);
-    generate_bombs(arr, bombs, x, y, first_cord);
-    uncover(arr, x, y, first_cord);
+    set_neighbour_policy(arr);
+    generate_bombs(arr, first_coord);
+    uncover(arr, first_coord);
 
-    print_arr(arr, x, y);
+    print_arr(arr);
 }
 
-void move(uint16_t arr[], int x, int y, bool* alive, int* flags_total){
-    bool action;
-    int cord;
+void move(uint16_t arr[], bool* alive_ptr, uint8_t* flags_total_ptr){
+    int action;
+    int coord;
 
     printf("Your action [0- uncover, 1- flag]: ");
+
+    fflush(stdin);
     scanf("%d", &action);
 
+    printf("Your number (0-%d): ", SIZE_X * SIZE_Y - 1);
 
-    printf("Your number (0-%d): ", x*y-1);
-    scanf("%d", &cord);
+    fflush(stdin);
+    scanf("%d", &coord);
 
     if(!action){
 
-        uncover(arr, x, y, cord);
-        print_arr(arr, x, y);
+        uncover(arr, coord);
+        print_arr(arr);
 
-        if((arr[cord]&0b1001) == 0b1001){
-            *alive = false;
+        if(FIELD_VALUE(arr[coord]) == BOMB_VALUE){
+            *alive_ptr = false;
         }
     }else{
-        set_flag(arr, cord, (int*)&flags_total);
-        print_arr(arr, x, y);
+        set_flag(arr, coord, flags_total_ptr);
+        print_arr(arr);
     }
 }

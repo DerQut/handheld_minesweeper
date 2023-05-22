@@ -1,11 +1,12 @@
 #pragma once
+#include <stdint.h>
 
-void print_arr(uint16_t arr[], int x, int y);
+void print_arr(uint16_t arr[]);
 
-void uncover(uint16_t arr[], int x, int y, int cord);
+void uncover(uint16_t arr[], int coord);
 
-void set_flag(uint16_t arr[], int cord, int* flags_total);
+void set_flag(uint16_t arr[], int coord, uint8_t* flags_total);
 
-void first_move(uint16_t arr[], int x, int y, int bombs);
+void first_move(uint16_t arr[]);
 
-void move(uint16_t arr[], int x, int y, bool* alive, int* flags_total);
+void move(uint16_t arr[], bool* alive, uint8_t* flags_total);
